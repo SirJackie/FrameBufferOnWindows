@@ -1,5 +1,3 @@
-Point
-
 Coordinate
 
 Comments

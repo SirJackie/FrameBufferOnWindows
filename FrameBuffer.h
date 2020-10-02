@@ -3,8 +3,7 @@
 #include <d3d9.h>
 #include <Windows.h>
 
-#define Pixel(fb) ((D3DCOLOR*)(*fb).rect.pBits)
-#define Pitch(fb) ((*fb).rect.Pitch >> 2)
+#define Pixel(fb, x, y) ((D3DCOLOR*)(*fb).rect.pBits)[x + ((*fb).rect.Pitch >> 2) * y]
 #define RGB888(r, g, b) (D3DCOLOR_XRGB(r, g, b))
 
 class FrameBuffer {
