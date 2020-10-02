@@ -6,6 +6,82 @@
 #include "Main.h"
 using namespace std;
 
+/*
+** DirectX Class
+*/
+class DirectX {
+
+private:
+
+	IDirect3D9* pDirect3D;
+	IDirect3DDevice9* pDevice;
+	IDirect3DSurface9* pBackBuffer = NULL;
+
+public:
+
+	D3DLOCKED_RECT      rect;
+	HWND                hWnd;
+
+	void Init(HWND hWndArgument) {
+		// Save Window Handle
+		hWnd = hWndArgument;
+
+		// Direct3D initialize
+		pDirect3D = Direct3DCreate9(D3D_SDK_VERSION);
+
+		D3DPRESENT_PARAMETERS d3dpp;
+		ZeroMemory(&d3dpp, sizeof(d3dpp));
+		d3dpp.Windowed = TRUE;
+		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+		d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
+		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
+		d3dpp.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+
+		pDirect3D->CreateDevice(
+			D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
+			D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_PUREDEVICE,
+			&d3dpp, &this->pDevice
+		);
+	}
+
+	void ClearBackBuffer()
+	{
+		pDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 0.0f, 0);
+	}
+
+	void LockBackBuffer() {
+		this->pDevice->GetBackBuffer(
+			0,
+			0,
+			D3DBACKBUFFER_TYPE_MONO,
+			&pBackBuffer);
+
+		pBackBuffer->LockRect(&rect, NULL, NULL);
+	}
+
+	void UnlockBackBuffer() {
+		pBackBuffer->UnlockRect();
+		pBackBuffer->Release();
+	}
+
+	void Back2FrontBuffer()
+	{
+		pDevice->Present(NULL, NULL, NULL, NULL);
+	}
+
+	void Destroy() {
+		if (pDevice) {
+			pDevice->Release();
+			pDevice = NULL;
+		}
+		if (pDirect3D) {
+			pDirect3D->Release();
+			pDirect3D = NULL;
+		}
+	}
+};
+
+
 
 /*
 ** Definations
@@ -22,14 +98,8 @@ int WindowLeftMargin;
 int WindowTopMargin;
 int WindowWidth;
 int WindowHeight;
-FrameBuffer fb;
+DirectX dx;
 BOOL FirstTimeRunning = TRUE;
-
-
-/*
-** Function Declaration
-*/
-LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
 /*
@@ -50,6 +120,21 @@ void GetScreenResolution(int* resultX, int* resultY) {
 	{
 		DeleteDC(hdcScreen);
 	}
+}
+
+
+/*
+** Message Processing Function
+*/
+LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+	}
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 
@@ -122,7 +207,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, INT)
 	UpdateWindow(hWnd);
 
 	// Initialize FrameBuffer
-	fb.Init(hWnd);
+	dx.Init(hWnd);
 
 
 	/*
@@ -154,48 +239,33 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, INT)
 			// If you want to clear the buffer
 			if (ClearBufferWhenLockingBackBuffer) {
 				// Clear it
-				fb.ClearBackBuffer();
+				dx.ClearBackBuffer();
 			}
 
 			// Lock the Back Buffer
-			fb.LockBackBuffer();
+			dx.LockBackBuffer();
 
 			// Main Function!
 			if (FirstTimeRunning) {
-				Setup(&fb, WindowWidth, WindowHeight);
+				Setup(dx.rect, WindowWidth, WindowHeight);
 				FirstTimeRunning = FALSE;
 			}
 			else {
-				Update(&fb, WindowWidth, WindowHeight);
+				Update(dx.rect, WindowWidth, WindowHeight);
 			}
 
 			// Unlock the Back Buffer
-			fb.UnlockBackBuffer();
+			dx.UnlockBackBuffer();
 
 			// Copy Back Buffer to Front Buffer
-			fb.Back2FrontBuffer();
+			dx.Back2FrontBuffer();
 		}
 	}
 
 	// When WM_DESTROY, Release All the Variables
 	UnregisterClass(WindowClassName, wc.hInstance);
-	OnDestroy(&fb, WindowWidth, WindowHeight);
-	fb.Destroy();
+	OnDestroy(dx.rect, WindowWidth, WindowHeight);
+	dx.Destroy();
 
 	return 0;
-}
-
-
-/*
-** Message Processing Function
-*/
-LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch (msg)
-	{
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-	}
-	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
