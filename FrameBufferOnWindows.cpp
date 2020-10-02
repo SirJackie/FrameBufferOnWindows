@@ -1,27 +1,81 @@
-﻿#include <iostream>
+﻿#include <stdio.h>
+#include <iostream>
 #include <Windows.h>
 #include "framework.h"
 #include "resource.h"
 #include "Main.h"
 using namespace std;
 
-#define WindowLeftMargin  50
-#define WindowTopMargin   50
-#define WindowWidth       1280
-#define WindowHeight      668
+
+/*
+** Definations
+*/
 #define WindowClassName   L"FrameBuffer"
 #define WindowTitle       L"FrameBuffer"
-
 #define ClearBufferWhenLockingBackBuffer FALSE
 
+
+/*
+** Global Variables
+*/
+int WindowLeftMargin;
+int WindowTopMargin;
+int WindowWidth;
+int WindowHeight;
+FrameBuffer fb;
 BOOL FirstTimeRunning = TRUE;
 
-FrameBuffer fb;
+
+/*
+** Function Declaration
+*/
 LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 
+/*
+** Functions
+*/
+
+void GetScreenResolution(int* resultX, int* resultY) {
+	// Get Screen HDC
+	HDC hdcScreen;
+	hdcScreen = CreateDC(L"DISPLAY", NULL, NULL, NULL);
+
+	// Get X and Y
+	*resultX = GetDeviceCaps(hdcScreen, HORZRES);    // pixel
+	*resultY = GetDeviceCaps(hdcScreen, VERTRES);    // pixel
+
+	// Release HDC
+	if (NULL != hdcScreen)
+	{
+		DeleteDC(hdcScreen);
+	}
+}
+
+
+/*
+** Main Function
+*/
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, INT)
 {
+	/*
+	** Calculate Window Width And Height
+	*/
+	int ScreenX, ScreenY;
+	GetScreenResolution(&ScreenX, &ScreenY);
+
+	// Only 95% of Height are Available, others are Task Bar
+	ScreenY = (float)ScreenY * (float)0.95;
+
+	int Unit = ScreenY / 30;
+
+	WindowTopMargin  = 1 * Unit;
+	WindowHeight     = 28 * Unit;
+
+	WindowLeftMargin = Unit;
+	WindowWidth      = ScreenX - 2 * Unit;
+
+
 	/*
 	** Register Window Class
 	*/
@@ -132,6 +186,9 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, INT)
 }
 
 
+/*
+** Message Processing Function
+*/
 LRESULT WINAPI MsgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
