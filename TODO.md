@@ -1,8 +1,10 @@
+Refactor FrameBuffer.h
+
 Coordinate
 
 Comments
 
-Text Printing
+Text Output
 
 Delta Time
 
